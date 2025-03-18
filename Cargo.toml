@@ -1,0 +1,8 @@
+[package]
+name = "particle-nannou"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bytemuck = { version = "1.13", features = ["derive"] }
+nannou = "0.19.0"
