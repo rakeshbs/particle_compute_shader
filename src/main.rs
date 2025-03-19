@@ -2,30 +2,20 @@ use nannou::prelude::*;
 use nannou::wgpu::{self, BufferUsages, ComputePassDescriptor, ShaderStages};
 use std::mem;
 
-const PARTICLE_COUNT: u32 = 1_000_00;
+const PARTICLE_COUNT: u32 = 1_000;
 
 struct Model {
-    compute_pipeline: wgpu::ComputePipeline,
+    simulate_pipeline: wgpu::ComputePipeline,
     render_pipeline: wgpu::RenderPipeline,
     particle_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct Particle {
     position: [f32; 2],
     velocity: [f32; 2],
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct QuadNode {
-    min_bound: [f32; 2],
-    max_bound: [f32; 2],
-    children: [f32; 4],  // Indices into the quad node buffer
-    particle_start: u32, // Index into the particle buffer
-    particle_count: u32, // Number of particles in this node
 }
 
 fn model(app: &App) -> Model {
@@ -87,15 +77,15 @@ fn model(app: &App) -> Model {
     });
 
     // Compute pipeline
-    let compute_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("Compute Pipeline Layout"),
+    let simulate_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("Simulate Pipeline Layout"),
         bind_group_layouts: &[&bind_group_layout],
         push_constant_ranges: &[],
     });
 
-    let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("Compute Pipeline"),
-        layout: Some(&compute_pipeline_layout),
+    let simulate_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+        label: Some("Simulate Pipeline"),
+        layout: Some(&simulate_pipeline_layout),
         module: &compute_shader,
         entry_point: "simulate_boids",
     });
@@ -147,7 +137,7 @@ fn model(app: &App) -> Model {
     });
 
     Model {
-        compute_pipeline,
+        simulate_pipeline,
         render_pipeline,
         particle_buffer,
         bind_group,
@@ -163,16 +153,14 @@ fn update(app: &App, model: &mut Model, _update: Update) {
         .create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Compute Encoder"),
         });
-
     {
         let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
             label: Some("Compute Pass"),
         });
-        compute_pass.set_pipeline(&model.compute_pipeline);
+        compute_pass.set_pipeline(&model.simulate_pipeline);
         compute_pass.set_bind_group(0, &model.bind_group, &[]);
         compute_pass.dispatch_workgroups(PARTICLE_COUNT / 256, 1, 1);
     }
-
     queue.submit(Some(encoder.finish()));
 }
 
@@ -208,4 +196,3 @@ fn view(app: &App, model: &Model, frame: Frame) {
 fn main() {
     nannou::app(model).update(update).run();
 }
-
