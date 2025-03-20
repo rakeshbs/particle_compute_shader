@@ -2,7 +2,7 @@ use nannou::prelude::*;
 use nannou::wgpu::{self, BufferUsages, ComputePassDescriptor, ShaderStages};
 use std::mem;
 
-const PARTICLE_COUNT: u32 = 1_000;
+const PARTICLE_COUNT: u32 = 5_0000;
 
 struct Model {
     simulate_pipeline: wgpu::ComputePipeline,
@@ -42,7 +42,7 @@ fn model(app: &App) -> Model {
     let particles = (0..PARTICLE_COUNT)
         .map(|_| Particle {
             position: [random_range(-1.0, 1.0), random_range(-1.0, 1.0)],
-            velocity: [random_range(-0.01, 0.01), random_range(-0.01, 0.01)],
+            velocity: [random_range(-0.001, 0.001), random_range(-0.001, 0.001)],
         })
         .collect::<Vec<_>>();
 
@@ -159,7 +159,9 @@ fn update(app: &App, model: &mut Model, _update: Update) {
         });
         compute_pass.set_pipeline(&model.simulate_pipeline);
         compute_pass.set_bind_group(0, &model.bind_group, &[]);
-        compute_pass.dispatch_workgroups(PARTICLE_COUNT / 256, 1, 1);
+        let workgroups_x = (PARTICLE_COUNT as f32 / 256.0).ceil() as u32; // e.g., 63
+                                                                          //
+        compute_pass.dispatch_workgroups(workgroups_x, 1, 1);
     }
     queue.submit(Some(encoder.finish()));
 }
