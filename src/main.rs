@@ -2,7 +2,7 @@ use nannou::prelude::*;
 use nannou::wgpu::{self, BufferUsages, ComputePassDescriptor, ShaderStages};
 use std::mem;
 
-const PARTICLE_COUNT: u32 = 5_0000;
+const PARTICLE_COUNT: u32 = 5_000;
 
 struct Model {
     simulate_pipeline: wgpu::ComputePipeline,
@@ -97,17 +97,19 @@ fn model(app: &App) -> Model {
         push_constant_ranges: &[],
     });
 
+    let vertex_buffer_layout = wgpu::VertexBufferLayout {
+        array_stride: mem::size_of::<Particle>() as wgpu::BufferAddress,
+        step_mode: wgpu::VertexStepMode::Instance,
+        attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2], // Position, Velocity
+    };
+
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("Render Pipeline"),
         layout: Some(&render_pipeline_layout),
         vertex: wgpu::VertexState {
             module: &vertex_shader,
             entry_point: "vs_main",
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: mem::size_of::<Particle>() as wgpu::BufferAddress,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &wgpu::vertex_attr_array![0 => Float32x2],
-            }],
+            buffers: &[vertex_buffer_layout],
         },
         fragment: Some(wgpu::FragmentState {
             module: &fragment_shader,
@@ -119,7 +121,7 @@ fn model(app: &App) -> Model {
             })],
         }),
         primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::PointList,
+            topology: wgpu::PrimitiveTopology::TriangleList,
             strip_index_format: None,
             front_face: wgpu::FrontFace::Ccw,
             cull_mode: None,
@@ -187,9 +189,10 @@ fn view(app: &App, model: &Model, frame: Frame) {
         depth_stencil_attachment: None,
     });
 
+    // In the view function, change the draw call to:
     render_pass.set_pipeline(&model.render_pipeline);
     render_pass.set_vertex_buffer(0, model.particle_buffer.slice(..));
-    render_pass.draw(0..PARTICLE_COUNT, 0..1);
+    render_pass.draw(0..3, 0..PARTICLE_COUNT); // Draw 3 vertices per instance, PARTICLE_COUNT instances
 
     drop(render_pass);
     queue.submit(Some(encoder.finish()));
