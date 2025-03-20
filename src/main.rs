@@ -2,7 +2,7 @@ use nannou::prelude::*;
 use nannou::wgpu::{self, BufferUsages, ComputePassDescriptor, ShaderStages};
 use std::mem;
 
-const PARTICLE_COUNT: u32 = 5_000;
+const PARTICLE_COUNT: u32 = 5_0000;
 
 struct Model {
     simulate_pipeline: wgpu::ComputePipeline,
@@ -97,10 +97,24 @@ fn model(app: &App) -> Model {
         push_constant_ranges: &[],
     });
 
+    // Make sure your vertex buffer layout correctly maps the struct fields
     let vertex_buffer_layout = wgpu::VertexBufferLayout {
         array_stride: mem::size_of::<Particle>() as wgpu::BufferAddress,
         step_mode: wgpu::VertexStepMode::Instance,
-        attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2], // Position, Velocity
+        attributes: &[
+            // Position
+            wgpu::VertexAttribute {
+                offset: 0,
+                shader_location: 0,
+                format: wgpu::VertexFormat::Float32x2,
+            },
+            // Velocity
+            wgpu::VertexAttribute {
+                offset: 8, // 2 * 4 bytes for the position
+                shader_location: 1,
+                format: wgpu::VertexFormat::Float32x2,
+            },
+        ],
     };
 
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {

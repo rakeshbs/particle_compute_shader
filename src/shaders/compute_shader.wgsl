@@ -63,18 +63,13 @@ fn simulate_boids(@builtin(global_invocation_id) id: vec3<u32>) {
 
     p.position += p.velocity;
 
-
-    if p.position.x > BOUNDARY_LIMIT {
-        p.position.x = -BOUNDARY_LIMIT;
-    } else if p.position.x < -BOUNDARY_LIMIT {
-        p.position.x = BOUNDARY_LIMIT;
+    if abs(p.position.x) > BOUNDARY_LIMIT || abs(p.position.y) > BOUNDARY_LIMIT {
+        p.velocity = -p.velocity;
+    }
+    if abs(p.position.x) > BOUNDARY_LIMIT {
+        p.position.x = sign(p.position.x) * BOUNDARY_LIMIT;
     }
 
-    if p.position.y > BOUNDARY_LIMIT {
-        p.position.y = -BOUNDARY_LIMIT;
-    } else if p.position.y < -BOUNDARY_LIMIT {
-        p.position.y = BOUNDARY_LIMIT;
-    }
 
     particles[index] = p;
 }
